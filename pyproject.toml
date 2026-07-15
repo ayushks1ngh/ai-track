@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aitrack"
+name = "local-ai-track"
 version = "1.0.0"
 description = "Local-first AI token usage tracker for coding assistants"
 readme = "README.md"
