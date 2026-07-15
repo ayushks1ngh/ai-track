@@ -122,20 +122,6 @@ class UsageRepository:
         group_by: str | None = None,
     ) -> list[dict]:
         with DBSession(self.engine) as session:
-            base = session.query(
-                func.sum(UsageRecordDB.input_tokens).label("total_input"),
-                func.sum(UsageRecordDB.output_tokens).label("total_output"),
-                func.sum(UsageRecordDB.reasoning_tokens).label("total_reasoning"),
-                func.sum(UsageRecordDB.cache_read_tokens).label("total_cache_read"),
-                func.sum(UsageRecordDB.cache_write_tokens).label("total_cache_write"),
-                func.sum(UsageRecordDB.total_tokens).label("total_tokens"),
-                func.sum(UsageRecordDB.estimated_cost).label("total_cost"),
-                func.count(UsageRecordDB.id).label("record_count"),
-            )
-            if start:
-                base = base.filter(UsageRecordDB.timestamp >= start)
-            if end:
-                base = base.filter(UsageRecordDB.timestamp <= end)
             if group_by:
                 col = getattr(UsageRecordDB, group_by, None)
                 if col:
@@ -149,7 +135,12 @@ class UsageRepository:
                         func.sum(UsageRecordDB.total_tokens).label("total_tokens"),
                         func.sum(UsageRecordDB.estimated_cost).label("total_cost"),
                         func.count(UsageRecordDB.id).label("record_count"),
-                    ).group_by(col)
+                    )
+                    if start:
+                        base = base.filter(UsageRecordDB.timestamp >= start)
+                    if end:
+                        base = base.filter(UsageRecordDB.timestamp <= end)
+                    base = base.group_by(col)
                     rows = base.all()
                     return [
                         {
@@ -165,6 +156,21 @@ class UsageRepository:
                         }
                         for r in rows
                     ]
+
+            base = session.query(
+                func.sum(UsageRecordDB.input_tokens).label("total_input"),
+                func.sum(UsageRecordDB.output_tokens).label("total_output"),
+                func.sum(UsageRecordDB.reasoning_tokens).label("total_reasoning"),
+                func.sum(UsageRecordDB.cache_read_tokens).label("total_cache_read"),
+                func.sum(UsageRecordDB.cache_write_tokens).label("total_cache_write"),
+                func.sum(UsageRecordDB.total_tokens).label("total_tokens"),
+                func.sum(UsageRecordDB.estimated_cost).label("total_cost"),
+                func.count(UsageRecordDB.id).label("record_count"),
+            )
+            if start:
+                base = base.filter(UsageRecordDB.timestamp >= start)
+            if end:
+                base = base.filter(UsageRecordDB.timestamp <= end)
             result = base.first()
             return [
                 {
